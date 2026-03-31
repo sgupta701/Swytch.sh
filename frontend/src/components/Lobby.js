@@ -12,7 +12,7 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
     };
 
     return (
-        <div className="min-h-screen bg-[#3052ad] p-4 flex items-center justify-center font-sans">
+        <div className="min-h-screen bg-transparent p-4 flex items-center justify-center font-sans">
             <Toaster position="top-center" />
             <div className="max-w-5xl w-full bg-[#eeeeee] rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] border-8 border-white/20">
                 
@@ -29,7 +29,6 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
                                     {p.id === socket.id && <span className="text-[10px] text-gray-500 font-black tracking-widest">THAT'S YOU!</span>}
                                 </div>
                                 
-                                {/* UPDATED KICK BUTTON: Permanently visible if you are host */}
                                 {p.isHost ? (
                                     <span title="Host" className="absolute right-3 top-4">👑</span>
                                 ) : (
@@ -52,7 +51,13 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
                     <div>
                         <div className="flex justify-between items-start mb-10">
                             <div>
-                                <h1 className="text-4xl font-black text-[#3052ad] italic leading-none">SWYTCH.SH LOBBY</h1>
+                              
+          <h1 
+            className="animate-tick-tock text-3xl text-[#3052ad] font-black tracking-wide"
+            style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
+          >
+            SWYTCH.SH LOBBY
+          </h1>
                                 <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Waiting for players...</p>
                             </div>
                             <div className="bg-white border-4 border-[#3052ad] px-6 py-3 rounded-2xl text-center shadow-lg">

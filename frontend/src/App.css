@@ -1,5 +1,12 @@
 /* frontend/src/App.css */
 
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+
+.font-playful {
+  font-family: 'Fredoka One', cursive;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.1); 
+}
+
 .App {
   text-align: center;
 }
@@ -17,8 +24,8 @@
 
 .App-header {
   background-color: #1a1c22; 
-
-  background-image: linear-gradient(rgba(20, 30, 48, 0.8), rgba(20, 30, 48, 0.8)), 
+  /* Fixed the 'rgha' typo to 'rgba' and used the correct root path */
+  background-image: linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), 
                     url('/background.png'); 
 
   background-size: cover;
@@ -52,4 +59,18 @@
 .animate-slide-up {
   animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0; 
+}
+
+@keyframes tickTock {
+  0%   { transform: rotate(3deg); }
+  45%  { transform: rotate(3deg); }
+  50%  { transform: rotate(-3deg); }
+  95%  { transform: rotate(-3deg); }
+  100% { transform: rotate(3deg); }
+}
+
+.animate-tick-tock {
+  display: inline-block; 
+  animation: tickTock 2s infinite; 
+  transform-origin: bottom center; 
 }

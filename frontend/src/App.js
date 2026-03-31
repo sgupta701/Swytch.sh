@@ -11,8 +11,11 @@ import Lobby from './components/Lobby';
 
 const socket = io.connect("http://localhost:4000");
 
-const AVATARS = Array.from({length: 50}, (_, i) => `https://api.dicebear.com/7.x/pixel-art/svg?seed=${i + 1}`);
+// pixel-art avatar
+// const AVATARS = Array.from({length: 50}, (_, i) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${i + 1}`);
 
+
+const AVATARS = Array.from({length: 50}, (_, i) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${i + 1}`);
 function App() {
   const [view, setView] = useState('landing'); 
   const [username, setUsername] = useState("");
@@ -28,9 +31,9 @@ function App() {
 
   const [finalScores, setFinalScores] = useState([]);
 
-  const [myHint, setMyHint] = useState("");         // <-- NEW
-  const [maskedWord, setMaskedWord] = useState(""); // <-- NEW
-  const [wordChoices, setWordChoices] = useState([]); // <-- NEW
+  const [myHint, setMyHint] = useState("");         
+  const [maskedWord, setMaskedWord] = useState(""); 
+  const [wordChoices, setWordChoices] = useState([]); 
 
   useEffect(() => {
     // --- LOBBY LISTENERS ---
@@ -39,11 +42,9 @@ function App() {
       setView('lobby');
     });
 
-    // Unified sync: Handles both state updates AND view changes for joiners
     socket.on('update_room', (data) => {
       setRoomData(data);
       
-      // If the user gets an update but is still on the landing page, move them!
       setView((prevView) => {
         if (prevView === 'landing') return 'lobby';
         return prevView;
@@ -63,13 +64,12 @@ function App() {
       setMaskedWord("");
       setWordChoices([]);
       setShowReveal(true);
-      // NOTE: We removed the setTimeout here! The server tells us when to close it now.
     });
 
     socket.on('word_choices', (choices) => setWordChoices(choices));
     
     socket.on('round_start', (data) => {
-      setShowReveal(false); // Close the modal
+      setShowReveal(false); 
       setTimers({ total: data.totalTime, relay: 20 });
     });
 
@@ -90,16 +90,14 @@ function App() {
       toast.error("You were kicked by the host.");
       setView('landing');
       setRoomData(null);
-      setRoomId(""); // Clear their inputs
+      setRoomId(""); 
     });
 
     socket.on('game_over', (finalPlayers) => {
-      // Sort players from highest score to lowest
       const sorted = [...finalPlayers].sort((a, b) => b.score - a.score);
       setFinalScores(sorted);
       setView('game_over');
 
-      // Auto-return to lobby after 10 seconds
       setTimeout(() => {
         setView('lobby');
       }, 10000);
@@ -110,7 +108,6 @@ function App() {
       setView('lobby');
     });
 
-    // Cleanup listeners so they don't double-fire
     return () => {
       socket.off('room_created');
       socket.off('update_room');
@@ -143,25 +140,26 @@ function App() {
   const prevAvatar = () => setAvatarIndex((prev) => (prev - 1 + AVATARS.length) % AVATARS.length);
   const randomAvatar = () => setAvatarIndex(Math.floor(Math.random() * AVATARS.length));
 
-  // --- RENDER: LANDING SCREEN ---
+  // LANDING SCREEN 
   if (view === 'landing') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#3052ad] font-sans">
+      <div className="h-screen flex flex-col items-center justify-center font-sans" style={{ backgroundImage: "linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), url('/background.png')", backgroundSize: 'cover', backgroundPosition: 'contain', backgroundRepeat: 'no-repeat' }}>
         <Toaster position="top-center" />
         <div className="bg-white p-10 rounded-2xl shadow-2xl w-96 text-center border-b-8 border-black/20">
-          <h1 className="text-6xl font-black mb-8 text-[#3052ad] tracking-tighter">SWYTCH.SH</h1>
-          
-          {/* NEW: AVATAR SELECTOR */}
+          <h1 
+            className="animate-tick-tock text-5xl text-[#3052ad] mb-8 font-black tracking-wide" 
+            style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
+          >
+            SWYTCH.SH
+          </h1>      
           <div className="bg-[#28448f] rounded-xl p-4 mb-6 relative select-none">
-            {/* Dice Button */}
             <button onClick={randomAvatar} className="absolute top-2 right-2 bg-white/20 hover:bg-white/40 p-2 rounded-lg transition-colors z-10">
-               🎲
+               🔄
             </button>
 
             <div className="flex items-center justify-between">
                 <button onClick={prevAvatar} className="text-white text-4xl font-black hover:scale-110 transition-transform">❮</button>
                 
-                {/* Main Avatar Display */}
                 <div 
                     onClick={() => setShowAvatarGrid(!showAvatarGrid)}
                     className="w-24 h-24 bg-black/20 rounded-xl cursor-pointer hover:bg-black/40 transition-colors flex items-center justify-center border-4 border-transparent hover:border-white/50"
@@ -173,7 +171,6 @@ function App() {
                 <button onClick={nextAvatar} className="text-white text-4xl font-black hover:scale-110 transition-transform">❯</button>
             </div>
 
-            {/* Avatar Grid Dropdown */}
             {showAvatarGrid && (
                 <div className="absolute top-full left-0 w-full bg-white border-4 border-[#28448f] rounded-xl mt-2 p-2 grid grid-cols-5 gap-2 h-64 overflow-y-auto z-50 shadow-2xl">
                     {AVATARS.map((av, idx) => (
@@ -213,29 +210,28 @@ function App() {
     );
   }
 
-  // --- RENDER: LOBBY SCREEN ---
+  // LOBBY SCREEN 
   if (view === 'lobby') {
     return (
-      <Lobby 
-        roomData={roomData} 
-        isHost={socket.id === roomData.host} 
-        onStart={handleStartGame} 
-        socket={socket}
-      />
-    );
+  <div className="min-h-screen" style={{ backgroundImage: "linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), url('/background.png')", backgroundSize: 'contain', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <Lobby 
+      roomData={roomData} 
+      isHost={socket.id === roomData.host} 
+      onStart={handleStartGame} 
+      socket={socket}
+    />
+  </div>
+);
   }
 
-  // --- RENDER: GAME SCREEN ---
+  // GAME SCREEN
   if (view === 'game') {
     let myRole = "GUESSER";
-   // Access .id safely
 if (socket.id === (gameState?.drawer1?.id || gameState?.drawer1)) myRole = "DRAWER 1 (FOUNDATION)";
 else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = "DRAWER 2 (FINISHER)";    return (
-      <div className="min-h-screen bg-[#3052ad] flex flex-col items-center p-4">
-        <Toaster position="top-center" />
+      <div className="min-h-screen flex flex-col items-center justify-start py-10 font-sans relative" style={{ backgroundImage: "linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), url('/background.png')", backgroundSize: 'contain', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>        <Toaster position="top-center" />
         {showReveal && (
             <div className="absolute inset-0 z-50 bg-black/80 flex flex-col items-center justify-center animate-fade-in-out">
-                {/* REDUCED max-w-lg to max-w-sm, and p-8 to p-6 */}
                 <div className="bg-white p-6 rounded-2xl text-center shadow-2xl max-w-sm w-full">
                     <h1 className="text-2xl font-black text-[#3052ad] mb-4">ROUND {gameState?.currentRound}</h1>
                     
@@ -280,7 +276,6 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
         />
         
         <div className="flex gap-4 mt-4 w-full justify-center items-start px-4">
-          {/* SCOREBOARD WITH PENCIL ICON */}
           <div className="w-80 bg-white rounded-xl shadow-xl overflow-hidden border-b-4 border-black/10 flex-shrink-0">
              <div className="bg-gray-200 p-3 font-black text-gray-700 border-b-2 border-gray-300 uppercase text-sm tracking-widest">Players</div>
              <div className="p-2">
@@ -288,11 +283,9 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
                  <div key={p.id} className={`flex justify-between items-center p-2 mb-1 rounded ${gameState?.activeDrawer === p.id ? 'bg-yellow-100 ring-2 ring-yellow-400 font-bold' : 'bg-gray-50'}`}>
                     <div className="flex items-center gap-2 overflow-hidden">
                         <span className="text-xs font-bold text-gray-400">#{idx+1}</span>
-                        {/* THE AVATAR */}
                         <img src={p.avatar} alt="av" className="w-8 h-8 rounded bg-gray-200" />
                         <span className="truncate flex items-center gap-1">
                             {p.username}
-                            {/* THE (YOU) TAG */}
                             {p.id === socket.id && <span className="text-[10px] text-[#3052ad] font-black tracking-widest">(YOU)</span>}
                         {roomData.host === socket.id && p.id !== socket.id && (
                                 <button 
@@ -320,7 +313,7 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
     );
   }
 
-  // --- RENDER: GAME OVER SCREEN (THE PODIUM) ---
+  // GAME OVER SCREEN
   if (view === 'game_over') {
     // Grab top 3 players
     const first = finalScores[0];
@@ -328,9 +321,8 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
     const third = finalScores[2];
 
     return (
-      <div className="h-screen bg-[#1a2b5e] flex flex-col items-center justify-center font-sans relative overflow-hidden">
+      <div className="h-screen flex flex-col items-center justify-center font-sans relative overflow-hidden" style={{ backgroundImage: "linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), url('/background.png')", backgroundSize: 'contain', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <Toaster position="top-center" />
-        {/* CSS Confetti/Stars (Zero dependencies!) */}
         <div className="absolute inset-0 pointer-events-none flex justify-around">
             {[...Array(20)].map((_, i) => (
                 <div key={i} className="animate-bounce text-4xl" style={{
@@ -347,10 +339,8 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
             MATCH COMPLETE!
         </h1>
 
-        {/* THE PODIUM */}
         <div className="flex items-end gap-4 h-96 z-10">
             
-            {/* Rank 2 (Silver) */}
             {second && (
                 <div className="flex flex-col items-center justify-end h-[80%] animate-slide-up" style={{ animationDelay: '0.5s' }}>
                     <div className="bg-gray-300 w-32 h-40 rounded-t-xl border-4 border-gray-400 flex flex-col items-center justify-center relative shadow-2xl">
@@ -362,7 +352,6 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
                 </div>
             )}
 
-            {/* Rank 1 (Gold) */}
             {first && (
                 <div className="flex flex-col items-center justify-end h-full animate-slide-up">
                     <div className="text-6xl mb-2 animate-pulse">👑</div>
@@ -375,7 +364,6 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
                 </div>
             )}
 
-            {/* Rank 3 (Bronze) */}
             {third && (
                 <div className="flex flex-col items-center justify-end h-[60%] animate-slide-up" style={{ animationDelay: '1s' }}>
                     <div className="bg-[#cd7f32] w-32 h-32 rounded-t-xl border-4 border-[#a05d20] flex flex-col items-center justify-center relative shadow-2xl">
@@ -388,7 +376,6 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
             )}
         </div>
 
-        {/* Remaining Players List */}
         {finalScores.length > 3 && (
             <div className="mt-8 flex gap-4 bg-white/10 p-4 rounded-2xl z-10 backdrop-blur-sm">
                 {finalScores.slice(3).map((p, idx) => (

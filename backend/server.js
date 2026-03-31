@@ -15,8 +15,8 @@ const rooms = {};
 function getSafeRoom(room) {
     if (!room) return null;
     const safeRoom = { ...room };
-    delete safeRoom.gameInterval;      // Removes the dangerous interval object
-    delete safeRoom.selectionTimeout;  // Removes the dangerous timeout object
+    delete safeRoom.gameInterval;     
+    delete safeRoom.selectionTimeout;  
     return safeRoom;
 }
 
@@ -49,13 +49,11 @@ io.on('connection', (socket) => {
         if (room.isStarted) return socket.emit('error_message', 'Game has already started.');
         if (room.players.length >= 8) return socket.emit('error_message', 'Room is full.');
 
-        // NEW: Check if this username was kicked/banned from this room
         const isBanned = room.banned.some(bannedName => bannedName.toLowerCase() === username.trim().toLowerCase());
         if (isBanned) {
             return socket.emit('error_message', 'You have been kicked from this room and cannot rejoin.');
         }
 
-        // If they pass all checks, let them in!
         socket.join(roomId);
         room.players.push({ id: socket.id, username, avatar, score: 0, isHost: false });
         io.to(roomId).emit('update_room', room);
@@ -68,7 +66,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- GAME LOGIC ---
+    // GAME LOGIC 
     socket.on('start_game', (roomId) => {
         if (rooms[roomId] && socket.id === rooms[roomId].host) {
             // NEW: Enforce 3 to 8 players
@@ -117,20 +115,16 @@ io.on('connection', (socket) => {
                 username: "SYSTEM", message: `${username} guessed the word!`, isCorrect: true 
             });
 
-            // --- THE FIX: CLEAN EMIT ---
-            // INSIDE socket.on('send_guess')
-// --- THE FIX: CLEAN EMIT ---
 const cleanRoomForEmit = getSafeRoom({
     ...room,
     gameState: {
         ...room.gameState,
-        drawer1: { id: room.gameState.drawer1.id }, // Send only necessary info
+        drawer1: { id: room.gameState.drawer1.id }, 
         drawer2: { id: room.gameState.drawer2.id }
     }
 });
-io.to(roomId).emit('update_room', cleanRoomForEmit); // Now it's perfectly safe!
+io.to(roomId).emit('update_room', cleanRoomForEmit); 
 
-            // Handle early round end if everyone guessed
             const totalGuessers = room.players.length - 2; 
             if (room.gameState.correctPlayers.length >= totalGuessers) {
                 if(room.gameState.total > 5) room.gameState.total = 5; 
@@ -155,7 +149,6 @@ io.to(roomId).emit('update_room', cleanRoomForEmit); // Now it's perfectly safe!
 
     socket.on('choose_word', ({ roomId, wordObj }) => {
         const room = rooms[roomId];
-        // If Drawer 1 picks a word, lock it in and start the game immediately
         if (room && room.gameState.activeDrawer === socket.id && !room.gameState.wordObj) {
             room.gameState.wordObj = wordObj;
             room.usedWords.push(wordObj.word);
@@ -165,28 +158,22 @@ io.to(roomId).emit('update_room', cleanRoomForEmit); // Now it's perfectly safe!
         }
     });
 
-    // Handle Kicking a Player
     socket.on('kick_player', ({ roomId, playerId }) => {
         const room = rooms[roomId];
         if (room && socket.id === room.host && socket.id !== playerId) {
             
-            // NEW: Find the player being kicked and add their username to the ban list
             const playerToKick = room.players.find(p => p.id === playerId);
             if (playerToKick) {
                 room.banned.push(playerToKick.username.toLowerCase());
             }
 
-            // Remove them from the active players list
             room.players = room.players.filter(p => p.id !== playerId);
             
-            // Tell the kicked player they were kicked
             io.to(playerId).emit('kicked');
             
-            // Force the socket to leave the Socket.io room
             const targetSocket = io.sockets.sockets.get(playerId);
             if (targetSocket) targetSocket.leave(roomId);
             
-            // If kicking them drops the game below 3 players, end the game!
             if (room.isStarted && room.players.length < 3) {
                 room.isStarted = false;
                 io.to(roomId).emit('game_ended_early');
@@ -199,7 +186,6 @@ io.to(roomId).emit('update_room', cleanRoomForEmit); // Now it's perfectly safe!
         }
     });
 
-    // Handle Accidental Disconnects (Closing the tab)
     socket.on('disconnect', () => {
         for (const roomId in rooms) {
             const room = rooms[roomId];
@@ -249,7 +235,7 @@ io.to(roomId).emit('update_room', cleanRoomForEmit); // Now it's perfectly safe!
 
 });
 
-// --- ROUND MANAGER ---
+//ROUND MANAGER 
 function startNewRound(roomId) {
     const room = rooms[roomId];
     if (!room) return;
@@ -268,7 +254,6 @@ function startNewRound(roomId) {
         room.usedWords = []; 
     }
 
-    // Pick 3 random choices for Drawer 1
     const choices = [];
     for(let i=0; i<3; i++) {
         const idx = Math.floor(Math.random() * availableWords.length);
@@ -279,10 +264,10 @@ function startNewRound(roomId) {
         activeDrawer: d1.id,
         drawer1: d1,
         drawer2: d2,
-        wordObj: null, // Will be set when Drawer 1 picks
+        wordObj: null, 
         choices: choices,
         total: room.settings.time,
-        relay: 20, // INCREASED TO 20 SECONDS
+        relay: 20, 
         elapsed: 0,
         correctPlayers: [],
         timeRemainingAtGuesses: [],
@@ -297,11 +282,9 @@ function startNewRound(roomId) {
         totalRounds: room.settings.rounds
     });
 
-    // Send the 3 choices ONLY to Drawer 1
     io.to(d1.id).emit('word_choices', choices);
     io.to(roomId).emit('clear_canvas');
 
-    // 10-Second Selection Phase
     room.selectionTimeout = setTimeout(() => {
         if (!room.gameState.wordObj) {
             // Auto-pick the first option if they take too long
@@ -315,11 +298,8 @@ function startNewRound(roomId) {
 function beginDrawingPhase(roomId) {
     const room = rooms[roomId];
     if (!room) return;
-
-    // Tell frontend to close the modal and start the UI
     io.to(roomId).emit('round_start', { totalTime: room.gameState.total });
 
-    // Send full word to Drawer 1, and HINT to Drawer 2
     io.to(room.gameState.drawer1.id).emit('secret_word', { word: room.gameState.wordObj.word });
     io.to(room.gameState.drawer2.id).emit('secret_hint', { hint: room.gameState.wordObj.hint });
 
@@ -330,12 +310,9 @@ function beginDrawingPhase(roomId) {
         room.gameState.relay--;
         room.gameState.elapsed++;
 
-        // --- LETTER REVEAL LOGIC (Every 25s) ---
-        // --- LETTER REVEAL LOGIC (Every 25s) ---
         if (room.gameState.elapsed > 0 && room.gameState.elapsed % 25 === 0) {
             const word = room.gameState.wordObj.word;
             let unrevealed = [];
-            // Find indices of letters that haven't been revealed and aren't spaces
             for(let i=0; i<word.length; i++) {
                 if(!room.gameState.revealedIndices.includes(i) && word[i] !== ' ') unrevealed.push(i);
             }
@@ -345,12 +322,10 @@ function beginDrawingPhase(roomId) {
             }
         }
 
-        // Construct the string with dashes and revealed letters
         const masked = room.gameState.wordObj.word.split('').map((char, i) => {
             return (room.gameState.revealedIndices.includes(i) || char === ' ') ? char : '_';
         }).join(' ');
 
-        // Relay Switch Logic
         if (room.gameState.relay <= 0 && room.gameState.total > 0) {
             room.gameState.activeDrawer = room.gameState.activeDrawer === room.gameState.drawer1.id 
                 ? room.gameState.drawer2.id 
@@ -358,7 +333,6 @@ function beginDrawingPhase(roomId) {
             room.gameState.relay = 20; // 20 SECONDS
             io.to(roomId).emit('switch_turn', { activeDrawer: room.gameState.activeDrawer });
             
-            // 60-Second Mark: Give Drawer 2 the actual word!
             if (room.gameState.elapsed >= 60) {
                 io.to(room.gameState.drawer2.id).emit('secret_word', { word: room.gameState.wordObj.word });
             }
@@ -367,11 +341,9 @@ function beginDrawingPhase(roomId) {
         io.to(roomId).emit('timer_update', { 
             total: room.gameState.total, 
             relay: room.gameState.relay,
-            maskedWord: masked // Send the masked version to guessers
+            maskedWord: masked 
         });
 
-        // --- FIND THIS SECTION IN beginDrawingPhase ---
-// --- FIND THIS BLOCK INSIDE beginDrawingPhase ---
 if (room.gameState.total <= 0) {
     clearInterval(room.gameInterval);
     
@@ -400,9 +372,6 @@ if (room.gameState.total <= 0) {
 
     io.to(roomId).emit('round_ended');
 
-    // --- THE FIX: CLEAN EMIT ---
-    // INSIDE beginDrawingPhase, inside the if (room.gameState.total <= 0) block
-// --- THE FIX: CLEAN EMIT ---
 const endRoundCleanRoom = getSafeRoom({
     ...room,
     gameState: {
@@ -413,7 +382,6 @@ const endRoundCleanRoom = getSafeRoom({
 });
 io.to(roomId).emit('update_room', endRoundCleanRoom);
 
-    // Round Transition Logic
     setTimeout(() => {
         if (room.currentRound < room.settings.rounds) {
             room.currentRound++;
@@ -425,7 +393,6 @@ io.to(roomId).emit('update_room', endRoundCleanRoom);
             room.usedWords = [];
             room.players.forEach(p => p.score = 0);
             
-            // Final Clean Emit
             io.to(roomId).emit('update_room', { ...room, gameState: {} });
         }
     }, 5000);

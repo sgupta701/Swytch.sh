@@ -7,7 +7,6 @@ const Chat = ({ socket, roomId, username, isDrawer }) => {
     const [messages, setMessages] = useState([]);
     const chatEndRef = useRef(null);
 
-    // Scroll to bottom whenever messages update
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -22,7 +21,6 @@ const Chat = ({ socket, roomId, username, isDrawer }) => {
     const sendMessage = (e) => {
         e.preventDefault();
         if (message.trim()) {
-            // Send to server: Room ID is crucial so server knows where to broadcast
             socket.emit('send_guess', { roomId, message, username });
             setMessage('');
         }
@@ -30,7 +28,6 @@ const Chat = ({ socket, roomId, username, isDrawer }) => {
 
     return (
         <div className="flex flex-col h-[580px] w-96 bg-[#eeeeee] border-4 border-white rounded-xl shadow-xl overflow-hidden">
-            {/* MESSAGE AREA */}
             <div className="flex-1 overflow-y-auto p-3 space-y-1 font-sans">
                 {messages.map((msg, i) => (
                     <div key={i} className={`text-sm p-2 rounded ${
@@ -47,7 +44,6 @@ const Chat = ({ socket, roomId, username, isDrawer }) => {
                 <div ref={chatEndRef} />
             </div>
 
-            {/* INPUT AREA (Now unlocked for everyone!) */}
             <div className="p-3 bg-white border-t-2 border-gray-200">
                 <form onSubmit={sendMessage} className="flex gap-2">
                     <input 

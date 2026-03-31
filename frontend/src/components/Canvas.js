@@ -15,11 +15,9 @@ const Canvas = ({ socket, roomId, isActive }) => {
     const [brushSize, setBrushSize] = useState(3);
     const [tool, setTool] = useState('pen'); 
 
-    // NEW: Undo/Redo State
     const [history, setHistory] = useState([]);
     const [step, setStep] = useState(-1);
 
-    // Helper to apply an image snapshot to the canvas
     const applySnapshot = (dataUrl, emitSync = false) => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
@@ -34,7 +32,6 @@ const Canvas = ({ socket, roomId, isActive }) => {
         };
     };
 
-    // Helper to save current canvas state to history
     const saveState = () => {
         if (!canvasRef.current) return;
         const dataUrl = canvasRef.current.toDataURL();
@@ -50,7 +47,6 @@ const Canvas = ({ socket, roomId, isActive }) => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-        // Initialize white canvas and save first state
         if (history.length === 0) {
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -60,7 +56,6 @@ const Canvas = ({ socket, roomId, isActive }) => {
         socket.on('draw_line', (data) => drawLine(ctx, data.x0, data.y0, data.x1, data.y1, data.color, data.size));
         socket.on('fill_canvas', (data) => executeFill(ctx, data.x, data.y, data.color, false));
         
-        // Listen for undo/redo syncs from the active drawer
         socket.on('set_canvas', (dataUrl) => applySnapshot(dataUrl, false));
 
         socket.on('clear_canvas', () => {
@@ -68,7 +63,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             setHistory([]);
             setStep(-1);
-            setTimeout(saveState, 50); // Save the fresh canvas to history
+            setTimeout(saveState, 50); 
         });
 
         return () => {
@@ -77,7 +72,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
             socket.off('clear_canvas');
             socket.off('set_canvas');
         };
-    }, [socket, step]); // Added step to dependency array
+    }, [socket, step]); 
 
     const drawLine = (ctx, x0, y0, x1, y1, strokeColor, size) => {
         ctx.beginPath();
@@ -89,7 +84,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
         ctx.stroke();
     };
 
-    // --- FLOOD FILL ALGORITHM ---
+    // flood fill algo
     const hexToRgba = (hex) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16), 255] : [0,0,0,255];
@@ -123,10 +118,9 @@ const Canvas = ({ socket, roomId, isActive }) => {
         }
         ctx.putImageData(imageData, 0, 0);
 
-        if (isLocal) saveState(); // Save to history after filling!
+        if (isLocal) saveState(); 
     };
 
-    // --- MOUSE HANDLERS ---
     const handleMouseDown = (e) => {
         if (!isActive) return;
         const rect = canvasRef.current.getBoundingClientRect();
@@ -162,16 +156,15 @@ const Canvas = ({ socket, roomId, isActive }) => {
     const handleMouseUp = () => {
         if (isDrawing && isActive) {
             setIsDrawing(false);
-            saveState(); // Save to history when the pen lifts!
+            saveState(); 
         }
     };
 
-    // --- UNDO / REDO CONTROLS ---
     const handleUndo = () => {
         if (step > 0) {
             const newStep = step - 1;
             setStep(newStep);
-            applySnapshot(history[newStep], true); // true = emit to server
+            applySnapshot(history[newStep], true); 
         }
     };
 
@@ -179,7 +172,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
         if (step < history.length - 1) {
             const newStep = step + 1;
             setStep(newStep);
-            applySnapshot(history[newStep], true); // true = emit to server
+            applySnapshot(history[newStep], true); 
         }
     };
 
@@ -197,8 +190,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
                         <button onClick={() => setTool('pen')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'pen' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>✏️ Pen</button>
                         <button onClick={() => setTool('fill')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'fill' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>🪣 Fill</button>
                         <button onClick={() => setTool('eraser')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'eraser' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>🧼 Eraser</button>
-                        
-                        {/* UNDO / REDO BUTTONS */}
+
                         <div className="border-l-2 border-gray-300 mx-1"></div>
                         <button onClick={handleUndo} disabled={step <= 0} className="px-3 py-1 bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50 hover:bg-gray-100">↩️ Undo</button>
                         <button onClick={handleRedo} disabled={step >= history.length - 1} className="px-3 py-1 bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50 hover:bg-gray-100">↪️ Redo</button>
