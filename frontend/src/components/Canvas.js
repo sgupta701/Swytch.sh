@@ -1,0 +1,242 @@
+import React, { useRef, useEffect, useState } from 'react';
+
+const COLORS = [
+    '#000000', '#555555', '#AAAAAA', '#FFFFFF', '#FF0000', 
+    '#FF5500', '#FFAA00', '#FFFF00', '#00FF00', '#00AA00', 
+    '#00FFFF', '#0000FF', '#5500FF', '#AA00FF', '#FF00FF', 
+    '#FF00AA', '#8B4513', '#D2B48C', '#FFC0CB', '#800000'
+];
+
+const Canvas = ({ socket, roomId, isActive }) => {
+    const canvasRef = useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
+    const [color, setColor] = useState('#000000');
+    const [brushSize, setBrushSize] = useState(3);
+    const [tool, setTool] = useState('pen'); 
+
+    // NEW: Undo/Redo State
+    const [history, setHistory] = useState([]);
+    const [step, setStep] = useState(-1);
+
+    // Helper to apply an image snapshot to the canvas
+    const applySnapshot = (dataUrl, emitSync = false) => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            if (emitSync) {
+                socket.emit('sync_canvas', { roomId, dataUrl });
+            }
+        };
+    };
+
+    // Helper to save current canvas state to history
+    const saveState = () => {
+        if (!canvasRef.current) return;
+        const dataUrl = canvasRef.current.toDataURL();
+        setHistory(prev => {
+            const newHistory = prev.slice(0, step + 1);
+            newHistory.push(dataUrl);
+            return newHistory;
+        });
+        setStep(prev => prev + 1);
+    };
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        // Initialize white canvas and save first state
+        if (history.length === 0) {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            saveState();
+        }
+
+        socket.on('draw_line', (data) => drawLine(ctx, data.x0, data.y0, data.x1, data.y1, data.color, data.size));
+        socket.on('fill_canvas', (data) => executeFill(ctx, data.x, data.y, data.color, false));
+        
+        // Listen for undo/redo syncs from the active drawer
+        socket.on('set_canvas', (dataUrl) => applySnapshot(dataUrl, false));
+
+        socket.on('clear_canvas', () => {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            setHistory([]);
+            setStep(-1);
+            setTimeout(saveState, 50); // Save the fresh canvas to history
+        });
+
+        return () => {
+            socket.off('draw_line');
+            socket.off('fill_canvas');
+            socket.off('clear_canvas');
+            socket.off('set_canvas');
+        };
+    }, [socket, step]); // Added step to dependency array
+
+    const drawLine = (ctx, x0, y0, x1, y1, strokeColor, size) => {
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = size;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    };
+
+    // --- FLOOD FILL ALGORITHM ---
+    const hexToRgba = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16), 255] : [0,0,0,255];
+    };
+
+    const executeFill = (ctx, startX, startY, fillColorHex, isLocal = true) => {
+        const canvas = ctx.canvas;
+        const width = canvas.width;
+        const height = canvas.height;
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        const startPos = (startY * width + startX) * 4;
+        const startR = data[startPos], startG = data[startPos + 1], startB = data[startPos + 2], startA = data[startPos + 3];
+        const fillColor = hexToRgba(fillColorHex);
+
+        if (startR === fillColor[0] && startG === fillColor[1] && startB === fillColor[2] && startA === fillColor[3]) return;
+
+        const matchStartColor = (pos) => data[pos] === startR && data[pos + 1] === startG && data[pos + 2] === startB && data[pos + 3] === startA;
+        const colorPixel = (pos) => { data[pos] = fillColor[0]; data[pos + 1] = fillColor[1]; data[pos + 2] = fillColor[2]; data[pos + 3] = 255; };
+
+        const pixelStack = [[startX, startY]];
+        while (pixelStack.length > 0) {
+            const [x, y] = pixelStack.pop();
+            const pos = (y * width + x) * 4;
+
+            if (x < 0 || x >= width || y < 0 || y >= height || !matchStartColor(pos)) continue;
+
+            colorPixel(pos);
+            pixelStack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        if (isLocal) saveState(); // Save to history after filling!
+    };
+
+    // --- MOUSE HANDLERS ---
+    const handleMouseDown = (e) => {
+        if (!isActive) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = Math.floor(e.clientX - rect.left);
+        const y = Math.floor(e.clientY - rect.top);
+
+        if (tool === 'fill') {
+            const ctx = canvasRef.current.getContext('2d');
+            executeFill(ctx, x, y, color, true);
+            socket.emit('fill', { roomId, data: { x, y, color } });
+        } else {
+            setLastPos({ x, y });
+            setIsDrawing(true);
+        }
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDrawing || !isActive || tool === 'fill') return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const currentPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        const ctx = canvasRef.current.getContext('2d');
+        const activeColor = tool === 'eraser' ? '#ffffff' : color;
+
+        drawLine(ctx, lastPos.x, lastPos.y, currentPos.x, currentPos.y, activeColor, brushSize);
+        
+        socket.emit('draw', {
+            roomId,
+            data: { x0: lastPos.x, y0: lastPos.y, x1: currentPos.x, y1: currentPos.y, color: activeColor, size: brushSize }
+        });
+        setLastPos(currentPos);
+    };
+
+    const handleMouseUp = () => {
+        if (isDrawing && isActive) {
+            setIsDrawing(false);
+            saveState(); // Save to history when the pen lifts!
+        }
+    };
+
+    // --- UNDO / REDO CONTROLS ---
+    const handleUndo = () => {
+        if (step > 0) {
+            const newStep = step - 1;
+            setStep(newStep);
+            applySnapshot(history[newStep], true); // true = emit to server
+        }
+    };
+
+    const handleRedo = () => {
+        if (step < history.length - 1) {
+            const newStep = step + 1;
+            setStep(newStep);
+            applySnapshot(history[newStep], true); // true = emit to server
+        }
+    };
+
+    const cursorStyle = tool === 'fill' 
+        ? "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\"><text y=\"20\" font-size=\"20\">🪣</text></svg>') 4 20, pointer"
+        : "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\"><text y=\"20\" font-size=\"20\">✏️</text></svg>') 0 24, crosshair";
+
+    return (
+        <div className="flex flex-col gap-2">
+            {/* TOOLBAR */}
+            <div className={`flex flex-col gap-2 p-3 bg-gray-200 rounded-t-lg border-b-2 border-gray-400 ${!isActive && 'opacity-50 pointer-events-none'}`}>
+                
+                <div className="flex gap-4 items-center justify-between">
+                    <div className="flex gap-2">
+                        <button onClick={() => setTool('pen')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'pen' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>✏️ Pen</button>
+                        <button onClick={() => setTool('fill')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'fill' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>🪣 Fill</button>
+                        <button onClick={() => setTool('eraser')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'eraser' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>🧼 Eraser</button>
+                        
+                        {/* UNDO / REDO BUTTONS */}
+                        <div className="border-l-2 border-gray-300 mx-1"></div>
+                        <button onClick={handleUndo} disabled={step <= 0} className="px-3 py-1 bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50 hover:bg-gray-100">↩️ Undo</button>
+                        <button onClick={handleRedo} disabled={step >= history.length - 1} className="px-3 py-1 bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50 hover:bg-gray-100">↪️ Redo</button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase">Size:</span>
+                        <input type="range" min="2" max="30" value={brushSize} onChange={(e) => setBrushSize(e.target.value)} className="w-24" />
+                        <div className="w-6 h-6 bg-black rounded-full" style={{ transform: `scale(${brushSize / 30})` }}></div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-10 gap-1 w-fit bg-gray-300 p-1 rounded">
+                    {COLORS.map((c) => (
+                        <div 
+                            key={c} 
+                            onClick={() => { setColor(c); if(tool === 'eraser') setTool('pen'); }}
+                            className={`w-6 h-6 cursor-pointer border-2 shadow-sm ${color === c && tool !== 'eraser' ? 'border-white scale-110 z-10' : 'border-black/20'}`}
+                            style={{ backgroundColor: c }}
+                            title={c}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            <canvas 
+                ref={canvasRef} 
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseOut={handleMouseUp}
+                width={800}
+                height={500}
+                style={{ cursor: isActive ? cursorStyle : 'default' }}
+                className={`bg-white shadow-xl border-4 ${isActive ? 'border-green-500' : 'border-gray-300'}`}
+            />
+        </div>
+    );
+};
+
+export default Canvas;
