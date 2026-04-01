@@ -11,7 +11,7 @@ import './App.css';
 
 const socket = io.connect(
   process.env.NODE_ENV === "production" 
-  ? "https://xyz.onrender.com" 
+  ? "https://swytch-sh-backend.onrender.com" 
   : "http://localhost:4000"
 );
 
