@@ -3,7 +3,7 @@ A real-time, collaborative multiplayer drawing and guessing game.
 
 swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike traditional games where one person draws the entire word, swytch forces two players to collaborate on a single drawing. The catch? The pen "swytches" between them every 20 seconds. It’s a test of intuition, teamwork, and artistic speed.
 
-[**Play Swytch.sh Live**](https://swytch-sh-app.onrender.com)
+Play [**Swytch.sh Live**](https://swytch-sh-app.onrender.com/)
 
 > **Note:** This project is hosted on a Render free tier. If the site has been inactive, the backend server may take **up to 50 seconds** to "wake up" before you can create or join a room.
 

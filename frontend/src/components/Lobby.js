@@ -53,7 +53,7 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
           <h1 
             className="text-5xl text-[#3052ad] font-black tracking-wide"
             style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
-          >LOBBY</h1>                    
+          >LOBBY</h1>                     
           <h1 
             className="animate-tick-tock text-3xl text-[#3052ad] font-black tracking-wide"
             style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
@@ -106,24 +106,34 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
                         </div>
                     </div>
 
-                    <div className="flex gap-4">
-                        <button 
-                            className="flex-1 bg-white border-4 border-gray-200 hover:border-[#3052ad] text-gray-400 hover:text-[#3052ad] font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-sm"
-                            onClick={() => {
-                                navigator.clipboard.writeText(roomData.id);
-                                toast.success("Room Code Copied!");
-                            }}
-                        >
-                            Copy Link
-                        </button>
-                        {isHost && (
+                    <div className="flex flex-col gap-4">
+                        {/* INSTRUCTION ADDED HERE */}
+                        <div className="flex items-center gap-2 px-2">
+                            <span className="animate-bounce">👉</span>
+                            <p className="text-xs font-black text-[#3052ad] uppercase tracking-tighter">
+                                Share this room code with your friends to play together!
+                            </p>
+                        </div>
+
+                        <div className="flex gap-4">
                             <button 
-                                onClick={onStart}
-                                className="flex-[2] bg-[#43b330] hover:bg-[#3da32b] text-white font-black py-4 rounded-2xl shadow-[0_6px_0_rgb(34,92,24)] transition-all active:translate-y-1 active:shadow-none text-xl uppercase tracking-tighter"
+                                className="flex-1 bg-white border-4 border-gray-200 hover:border-[#3052ad] text-gray-400 hover:text-[#3052ad] font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-sm"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(roomData.id);
+                                    toast.success("Room Code Copied!");
+                                }}
                             >
-                                Start Game!
+                                Copy Code
                             </button>
-                        )}
+                            {isHost && (
+                                <button 
+                                    onClick={onStart}
+                                    className="flex-[2] bg-[#43b330] hover:bg-[#3da32b] text-white font-black py-4 rounded-2xl shadow-[0_6px_0_rgb(34,92,24)] transition-all active:translate-y-1 active:shadow-none text-xl uppercase tracking-tighter"
+                                >
+                                    Start Game!
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
