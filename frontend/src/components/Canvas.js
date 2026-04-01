@@ -183,7 +183,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
     return (
         <div className="flex flex-col gap-1">
             {/* TOOLBAR */}
-            <div className={`flex flex-col gap-1.5 p-1.5 bg-gray-200 rounded-t-lg border-b-2 border-gray-400 ${!isActive && 'opacity-50 pointer-events-none'}`}>
+            <div className={`flex flex-col gap-1.5 p-1.5 bg-gray-200 rounded-t-lg border-b-2 border-gray-400 ${!isActive && 'opacity-85 pointer-events-none'}`}>
                 
                 <div className="flex gap-4 items-center justify-between">
                     <div className="flex gap-2">
