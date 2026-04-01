@@ -9,7 +9,11 @@ import GameUI from './components/GameUI';
 import Lobby from './components/Lobby';
 import './App.css';
 
-const socket = io.connect("http://localhost:4000");
+const socket = io.connect(
+  process.env.NODE_ENV === "production" 
+  ? "https://xyz.onrender.com" 
+  : "http://localhost:4000"
+);
 
 // pixelart avatar
 // const AVATARS = Array.from({length: 50}, (_, i) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${i + 1}`);
