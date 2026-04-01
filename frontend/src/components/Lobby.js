@@ -14,7 +14,7 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
     return (
         <div className="min-h-screen bg-transparent p-4 flex items-center justify-center font-sans">
             <Toaster position="top-center" />
-            <div className="max-w-5xl w-full bg-white/75 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] border-8 border-white/20">
+            <div className="max-w-5xl w-full bg-white/75 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px] md:h-[600px] border-8 border-white/20">
                 {/* LEFT: PLAYER LIST */}
                 <div className="w-full md:w-80 bg-transparent border-r-4 border-gray-200/50 p-6 overflow-y-auto">
                     <h2 className="font-black text-2xl mb-6 text-gray-800 border-b-4 border-[#3052ad] pb-2 uppercase tracking-tight">Players ({roomData.players.length}/8)</h2>

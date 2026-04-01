@@ -1,3 +1,5 @@
+// frontend/src/components/Canvas.js
+
 import React, { useRef, useEffect, useState } from 'react';
 
 const COLORS = [
@@ -17,6 +19,21 @@ const Canvas = ({ socket, roomId, isActive }) => {
 
     const [history, setHistory] = useState([]);
     const [step, setStep] = useState(-1);
+
+    const getCoordinates = (e) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    };
 
     const applySnapshot = (dataUrl, emitSync = false) => {
         const canvas = canvasRef.current;
@@ -55,7 +72,6 @@ const Canvas = ({ socket, roomId, isActive }) => {
 
         socket.on('draw_line', (data) => drawLine(ctx, data.x0, data.y0, data.x1, data.y1, data.color, data.size));
         socket.on('fill_canvas', (data) => executeFill(ctx, data.x, data.y, data.color, false));
-        
         socket.on('set_canvas', (dataUrl) => applySnapshot(dataUrl, false));
 
         socket.on('clear_canvas', () => {
@@ -84,7 +100,6 @@ const Canvas = ({ socket, roomId, isActive }) => {
         ctx.stroke();
     };
 
-    // flood fill algo
     const hexToRgba = (hex) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16), 255] : [0,0,0,255];
@@ -97,7 +112,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
         const imageData = ctx.getImageData(0, 0, width, height);
         const data = imageData.data;
 
-        const startPos = (startY * width + startX) * 4;
+        const startPos = (Math.floor(startY) * width + Math.floor(startX)) * 4;
         const startR = data[startPos], startG = data[startPos + 1], startB = data[startPos + 2], startA = data[startPos + 3];
         const fillColor = hexToRgba(fillColorHex);
 
@@ -106,7 +121,7 @@ const Canvas = ({ socket, roomId, isActive }) => {
         const matchStartColor = (pos) => data[pos] === startR && data[pos + 1] === startG && data[pos + 2] === startB && data[pos + 3] === startA;
         const colorPixel = (pos) => { data[pos] = fillColor[0]; data[pos + 1] = fillColor[1]; data[pos + 2] = fillColor[2]; data[pos + 3] = 255; };
 
-        const pixelStack = [[startX, startY]];
+        const pixelStack = [[Math.floor(startX), Math.floor(startY)]];
         while (pixelStack.length > 0) {
             const [x, y] = pixelStack.pop();
             const pos = (y * width + x) * 4;
@@ -117,15 +132,12 @@ const Canvas = ({ socket, roomId, isActive }) => {
             pixelStack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
         }
         ctx.putImageData(imageData, 0, 0);
-
         if (isLocal) saveState(); 
     };
 
-    const handleMouseDown = (e) => {
+    const handleStart = (e) => {
         if (!isActive) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = Math.floor(e.clientX - rect.left);
-        const y = Math.floor(e.clientY - rect.top);
+        const { x, y } = getCoordinates(e);
 
         if (tool === 'fill') {
             const ctx = canvasRef.current.getContext('2d');
@@ -137,23 +149,24 @@ const Canvas = ({ socket, roomId, isActive }) => {
         }
     };
 
-    const handleMouseMove = (e) => {
+    const handleMove = (e) => {
         if (!isDrawing || !isActive || tool === 'fill') return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const currentPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        if (e.touches) e.preventDefault(); 
+
+        const { x, y } = getCoordinates(e);
         const ctx = canvasRef.current.getContext('2d');
         const activeColor = tool === 'eraser' ? '#ffffff' : color;
 
-        drawLine(ctx, lastPos.x, lastPos.y, currentPos.x, currentPos.y, activeColor, brushSize);
+        drawLine(ctx, lastPos.x, lastPos.y, x, y, activeColor, brushSize);
         
         socket.emit('draw', {
             roomId,
-            data: { x0: lastPos.x, y0: lastPos.y, x1: currentPos.x, y1: currentPos.y, color: activeColor, size: brushSize }
+            data: { x0: lastPos.x, y0: lastPos.y, x1: x, y1: y, color: activeColor, size: brushSize }
         });
-        setLastPos(currentPos);
+        setLastPos({ x, y });
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
         if (isDrawing && isActive) {
             setIsDrawing(false);
             saveState(); 
@@ -181,36 +194,26 @@ const Canvas = ({ socket, roomId, isActive }) => {
         : "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\"><text y=\"20\" font-size=\"20\">✏️</text></svg>') 0 24, crosshair";
 
     return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 w-full flex-1 max-w-[900px]">
             {/* TOOLBAR */}
-            <div className={`flex flex-col gap-1.5 p-1.5 bg-gray-200 rounded-t-lg border-b-2 border-gray-400 ${!isActive && 'opacity-85 pointer-events-none'}`}>
-                
-                <div className="flex gap-4 items-center justify-between">
-                    <div className="flex gap-2">
-                        <button onClick={() => setTool('pen')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'pen' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>✏️ Pen</button>
-                        <button onClick={() => setTool('fill')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'fill' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>🪣 Fill</button>
-                        <button onClick={() => setTool('eraser')} className={`px-3 py-1 bg-white border-2 rounded font-bold ${tool === 'eraser' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-400'}`}>🧼 Eraser</button>
-
-                        <div className="border-l-2 border-gray-300 mx-1"></div>
-                        <button onClick={handleUndo} disabled={step <= 0} className="px-3 py-1 bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50 hover:bg-gray-100">↩️ Undo</button>
-                        <button onClick={handleRedo} disabled={step >= history.length - 1} className="px-3 py-1 bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50 hover:bg-gray-100">↪️ Redo</button>
+            <div className={`flex flex-col gap-1 p-1.5 bg-gray-200 rounded-t-lg border-b-2 border-gray-400 ${!isActive && 'opacity-85 pointer-events-none'}`}>
+                <div className="flex gap-2 items-center justify-between flex-wrap">
+                    <div className="flex gap-1">
+                        <button onClick={() => setTool('pen')} className={`px-2 py-0.5 text-xs bg-white border-2 rounded font-bold ${tool === 'pen' ? 'border-blue-500 text-blue-600' : 'border-gray-400'}`}>✏️</button>
+                        <button onClick={() => setTool('fill')} className={`px-2 py-0.5 text-xs bg-white border-2 rounded font-bold ${tool === 'fill' ? 'border-blue-500 text-blue-600' : 'border-gray-400'}`}>🪣</button>
+                        <button onClick={() => setTool('eraser')} className={`px-2 py-0.5 text-xs bg-white border-2 rounded font-bold ${tool === 'eraser' ? 'border-blue-500 text-blue-600' : 'border-gray-400'}`}>🧼</button>
+                        <button onClick={handleUndo} disabled={step <= 0} className="px-2 py-0.5 text-xs bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50">↩️</button>
+                        <button onClick={handleRedo} disabled={step >= history.length - 1} className="px-2 py-0.5 text-xs bg-white border-2 border-gray-400 rounded font-bold disabled:opacity-50">↪️</button>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase">Size:</span>
-                        <input type="range" min="2" max="30" value={brushSize} onChange={(e) => setBrushSize(e.target.value)} className="w-24" />
-                        <div className="w-6 h-6 bg-black rounded-full" style={{ transform: `scale(${brushSize / 30})` }}></div>
+                    <div className="flex items-center gap-1">
+                        <input type="range" min="2" max="30" value={brushSize} onChange={(e) => setBrushSize(e.target.value)} className="w-16 md:w-24" />
                     </div>
                 </div>
-
                 <div className="grid grid-cols-10 gap-1 w-fit bg-gray-300 p-1 rounded">
                     {COLORS.map((c) => (
-                        <div 
-                            key={c} 
-                            onClick={() => { setColor(c); if(tool === 'eraser') setTool('pen'); }}
-                            className={`w-5 h-5 cursor-pointer border-2 shadow-sm ${color === c && tool !== 'eraser' ? 'border-white scale-110 z-10' : 'border-black/20'}`}
+                        <div key={c} onClick={() => { setColor(c); if(tool === 'eraser') setTool('pen'); }}
+                            className={`w-4 h-4 md:w-5 md:h-5 cursor-pointer border-2 shadow-sm ${color === c && tool !== 'eraser' ? 'border-white scale-110' : 'border-black/20'}`}
                             style={{ backgroundColor: c }}
-                            title={c}
                         />
                     ))}
                 </div>
@@ -218,14 +221,20 @@ const Canvas = ({ socket, roomId, isActive }) => {
 
             <canvas 
                 ref={canvasRef} 
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseOut={handleMouseUp}
+                onMouseDown={handleStart}
+                onMouseMove={handleMove}
+                onMouseUp={handleEnd}
+                onMouseOut={handleEnd}
+                onTouchStart={handleStart}
+                onTouchMove={handleMove}
+                onTouchEnd={handleEnd}
                 width={800}
-                height={470}
-                style={{ cursor: isActive ? cursorStyle : 'default' }}
-                className={`bg-white shadow-xl border-4 ${isActive ? 'border-green-500' : 'border-gray-300'}`}
+                height={500}
+                style={{ 
+                    cursor: isActive ? cursorStyle : 'default',
+                    touchAction: 'none' 
+                }}
+                className={`bg-white shadow-xl border-4 w-full h-auto max-h-[60vh] object-contain ${isActive ? 'border-green-500' : 'border-gray-300'}`}
             />
         </div>
     );

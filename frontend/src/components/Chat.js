@@ -27,7 +27,7 @@ const Chat = ({ socket, roomId, username, isDrawer }) => {
     };
 
     return (
-        <div className="flex flex-col h-[580px] w-96 bg-[#eeeeee] border-4 border-white rounded-xl shadow-xl overflow-hidden">
+<div className="flex flex-col h-[400px] md:h-[500px] lg:h-[545px] w-full lg:w-[300px] bg-[#eeeeee] border-4 border-white rounded-xl shadow-xl overflow-hidden">
             <div className="flex-1 overflow-y-auto p-3 space-y-1 font-sans">
                 {messages.map((msg, i) => (
                     <div key={i} className={`text-sm p-2 rounded ${

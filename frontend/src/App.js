@@ -346,8 +346,8 @@ else if (socket.id === (gameState?.drawer2?.id || gameState?.drawer2)) myRole = 
             socket={socket}                      
         />
         
-        <div className="flex gap-4 mt-4 w-full justify-center items-start px-4">
-          <div className="w-80 bg-white rounded-xl shadow-xl overflow-hidden border-b-4 border-black/10 flex-shrink-0">
+<div className="flex flex-col lg:flex-row gap-4 mt-4 w-full max-w-[1400px] justify-center items-center lg:items-start px-2 md:px-6">
+          <div className="w-full lg:w-72 bg-white rounded-xl shadow-xl overflow-hidden border-b-4 border-black/10 flex-shrink-0">
              <div className="bg-gray-200 p-3 font-black text-gray-700 border-b-2 border-gray-300 uppercase text-sm tracking-widest">Players</div>
              <div className="p-2">
                {roomData.players.map((p, idx) => (
