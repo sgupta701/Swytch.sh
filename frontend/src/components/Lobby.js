@@ -14,10 +14,9 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
     return (
         <div className="min-h-screen bg-transparent p-4 flex items-center justify-center font-sans">
             <Toaster position="top-center" />
-            <div className="max-w-5xl w-full bg-[#eeeeee] rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] border-8 border-white/20">
-                
+            <div className="max-w-5xl w-full bg-white/75 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[600px] border-8 border-white/20">
                 {/* LEFT: PLAYER LIST */}
-                <div className="w-full md:w-80 bg-white border-r-4 border-gray-200 p-6 overflow-y-auto">
+                <div className="w-full md:w-80 bg-transparent border-r-4 border-gray-200/50 p-6 overflow-y-auto">
                     <h2 className="font-black text-2xl mb-6 text-gray-800 border-b-4 border-[#3052ad] pb-2 uppercase tracking-tight">Players ({roomData.players.length}/8)</h2>
                     <div className="space-y-3">
                         {roomData.players.map((p, index) => (
@@ -47,17 +46,21 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
                 </div>
 
                 {/* RIGHT: SETTINGS */}
-                <div className="flex-1 p-10 flex flex-col justify-between bg-gray-50">
+                <div className="flex-1 p-10 flex flex-col justify-between bg-transparent">
                     <div>
                         <div className="flex justify-between items-start mb-10">
                             <div>
-                              
+          <h1 
+            className="text-5xl text-[#3052ad] font-black tracking-wide"
+            style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
+          >LOBBY</h1>                    
           <h1 
             className="animate-tick-tock text-3xl text-[#3052ad] font-black tracking-wide"
             style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
           >
-            SWYTCH.SH LOBBY
+          <i>swytch.sh</i>   
           </h1>
+          
                                 <p className="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">Waiting for players...</p>
                             </div>
                             <div className="bg-white border-4 border-[#3052ad] px-6 py-3 rounded-2xl text-center shadow-lg">
@@ -76,7 +79,8 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
                                     className="p-3 bg-white border-4 border-gray-200 rounded-xl font-black text-[#3052ad] w-44 outline-none focus:border-[#3052ad] transition-colors disabled:opacity-100"
                                 >
                                     <option value={90}>90 Seconds</option>
-                                    <option value={105}>105 Seconds</option>
+                                    <option value={100}>100 Seconds</option>
+                                    <option value={110}>110 Seconds</option>
                                     <option value={120}>120 Seconds</option>
                                 </select>
                             </div>
@@ -90,8 +94,13 @@ const Lobby = ({ roomData, isHost, onStart, socket }) => {
                                     className="p-3 bg-white border-4 border-gray-200 rounded-xl font-black text-[#3052ad] w-44 outline-none focus:border-[#3052ad] transition-colors disabled:opacity-100"
                                 >
                                     <option value={3}>3 Rounds</option>
+                                    <option value={4}>4 Rounds</option>
                                     <option value={5}>5 Rounds</option>
+                                    <option value={6}>6 Rounds</option>
                                     <option value={7}>7 Rounds</option>
+                                    <option value={8}>8 Rounds</option>
+                                    <option value={9}>9 Rounds</option>
+                                    <option value={10}>10 Rounds</option>
                                 </select>
                             </div>
                         </div>

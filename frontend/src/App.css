@@ -25,9 +25,7 @@
 .App-header {
   background-color: #1a1c22; 
   /* Fixed the 'rgha' typo to 'rgba' and used the correct root path */
-  background-image: linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), 
-                    url('/background.png'); 
-
+  
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -71,6 +69,6 @@
 
 .animate-tick-tock {
   display: inline-block; 
-  animation: tickTock 2s infinite; 
+  animation: tickTock 1s infinite; 
   transform-origin: bottom center; 
 }

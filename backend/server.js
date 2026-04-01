@@ -96,7 +96,7 @@ io.on('connection', (socket) => {
     if (isCorrect) {
         if (isDrawer) {
             socket.emit('receive_message', { 
-                username: "SYSTEM", message: "You are drawing! Don't spoil it.", isCorrect: false 
+                username: "SYSTEM", message: "You are the drawer!! Shhh...", isCorrect: false 
             });
             return;
         }
@@ -127,7 +127,7 @@ io.to(roomId).emit('update_room', cleanRoomForEmit);
 
             const totalGuessers = room.players.length - 2; 
             if (room.gameState.correctPlayers.length >= totalGuessers) {
-                if(room.gameState.total > 5) room.gameState.total = 5; 
+                if(room.gameState.total > 0) room.gameState.total = 0;
             }
         }
     } else {
@@ -395,7 +395,7 @@ io.to(roomId).emit('update_room', endRoundCleanRoom);
             
             io.to(roomId).emit('update_room', { ...room, gameState: {} });
         }
-    }, 5000);
+    }, 2000);
 }
     }, 1000);
 }

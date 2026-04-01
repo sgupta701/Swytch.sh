@@ -1,0 +1,9 @@
+add how to play on landing page
+change box color on langing page
+tick tick effect
+update round numbers frokm 3 to 10
+update time from 90-105-120 to 90-100-110-120
+think of ways to make it more fun and dynamic - both ui and ux
+change background color from white to something... or maybe a bit translucent
+highlight the players whoa re the drawers under the player window
+ask gemini what other features could be added

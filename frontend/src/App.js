@@ -7,11 +7,11 @@ import Canvas from './components/Canvas';
 import Chat from './components/Chat';
 import GameUI from './components/GameUI';
 import Lobby from './components/Lobby';
-
+import './App.css';
 
 const socket = io.connect("http://localhost:4000");
 
-// pixel-art avatar
+// pixelart avatar
 // const AVATARS = Array.from({length: 50}, (_, i) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${i + 1}`);
 
 
@@ -33,7 +33,9 @@ function App() {
 
   const [myHint, setMyHint] = useState("");         
   const [maskedWord, setMaskedWord] = useState(""); 
-  const [wordChoices, setWordChoices] = useState([]); 
+  const [wordChoices, setWordChoices] = useState([]);
+  
+    const [showHowToPlay, setShowHowToPlay] = useState(false); 
 
   useEffect(() => {
     // --- LOBBY LISTENERS ---
@@ -58,7 +60,6 @@ function App() {
     socket.on('round_init', (data) => {
       setGameState(data);
       setView('game');
-      // Reset all round data
       setMySecretWord(""); 
       setMyHint("");
       setMaskedWord("");
@@ -140,21 +141,86 @@ function App() {
   const prevAvatar = () => setAvatarIndex((prev) => (prev - 1 + AVATARS.length) % AVATARS.length);
   const randomAvatar = () => setAvatarIndex(Math.floor(Math.random() * AVATARS.length));
 
-  // LANDING SCREEN 
+// LANDING SCREEN 
   if (view === 'landing') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center font-sans" style={{ backgroundImage: "linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), url('/background.png')", backgroundSize: 'cover', backgroundPosition: 'contain', backgroundRepeat: 'no-repeat' }}>
+      <div className="h-screen flex flex-col items-center justify-center font-sans relative" style={{ backgroundImage: "linear-gradient(rgba(20, 30, 48, 0.7), rgba(20, 30, 48, 0.7)), url('/background.png')", backgroundSize: 'cover', backgroundPosition: 'contain', backgroundRepeat: 'no-repeat' }}>
         <Toaster position="top-center" />
-        <div className="bg-white p-10 rounded-2xl shadow-2xl w-96 text-center border-b-8 border-black/20">
+
+        <button 
+          onClick={() => setShowHowToPlay(true)} 
+          className="absolute top-6 right-6 bg-white/70 backdrop-blur-sm text-[#3052ad] px-5 py-2 rounded-2xl shadow-[0_4px_0_rgba(20,40,90,0.5)] hover:translate-y-1 hover:shadow-none transition-all font-black uppercase tracking-widest z-10"
+          style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
+        >
+          How to Play ❓
+        </button>
+
+        {showHowToPlay && (
+          <div className="absolute inset-0 z-50 bg-black/30 backdrop-blur-md flex items-center justify-center p-4">
+            <div 
+              className="bg-white/60 backdrop-blur-lg rounded-3xl p-6 max-w-4xl w-full mx-4 relative shadow-2xl border-4 border-[#3052ad] animate-slide-up" 
+              style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
+            >
+              <button 
+                onClick={() => setShowHowToPlay(false)} 
+                className="absolute top-4 right-6 text-3xl text-gray-200 hover:text-red-500 transition-colors"
+              >
+                ✖
+              </button>
+              
+              <h2 className="text-3xl text-[#3052ad] mb-2 text-center tracking-wide">How to Play!</h2>
+              
+              <p className="text-center text-base text-gray-600 mb-6 font-sans font-bold">
+                two players are randomly chosen to draw together in the beginning of every round
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-800 text-left font-sans">
+                
+                <div className="bg-[#e6f4ea]/80 p-4 rounded-xl border-2 border-[#bce4c6] flex flex-col items-center transform -rotate-1 hover:rotate-0 transition-transform shadow-sm">
+                  <span className="text-[#43b330] text-xl block mb-2 leading-tight font-black text-center" style={{ fontFamily: "'Fredoka One', cursive" }}>Drawer 1<br/><span className="text-sm opacity-80">(The Starter)</span></span> 
+                  <p className="text-sm leading-relaxed font-bold">You know the secret word! You get the first 20 seconds to start scribbling.</p>
+                </div>
+
+                <div className="bg-[#fff9e6]/80 p-4 rounded-xl border-2 border-[#ffecb3] flex flex-col items-center transform rotate-1 hover:rotate-0 transition-transform shadow-sm">
+                  <span className="text-yellow-600 text-xl block mb-2 leading-tight font-black text-center" style={{ fontFamily: "'Fredoka One', cursive" }}>Drawer 2<br/><span className="text-sm opacity-80">(The Finisher)</span></span> 
+                  <p className="text-sm leading-relaxed font-bold">You start with just a hint! Pick up exactly where Drawer 1 left off. The pen <strong>SWYTCHes</strong> between you two every 20 seconds! <br/><span className="text-[11px] text-yellow-700 opacity-80 mt-2 block text-center">(and don't worry, the real word is revealed to you after 60 seconds!)</span></p>
+                </div>
+
+                <div className="bg-[#f3e5f5]/80 p-4 rounded-xl border-2 border-[#e1bee7] flex flex-col items-center transform -rotate-1 hover:rotate-0 transition-transform shadow-sm">
+                  <span className="text-purple-600 text-xl block mb-2 leading-tight font-black text-center" style={{ fontFamily: "'Fredoka One', cursive" }}>The Guessers<br/><span className="text-sm opacity-80">(Everyone Else)</span></span> 
+                  <p className="text-sm leading-relaxed font-bold">Type your guesses in the chat! The fastest guesser gets the most points. <br/><span className="text-[11px] text-purple-700 opacity-80 mt-2 block text-center">(Drawer's score is based on how fast you guys guess!)</span></p>
+                </div>
+              </div>
+
+              <p className="text-center text-sm text-gray-600 mt-6 mb-4 font-sans font-bold italic opacity-100 px-10">
+                Host can adjust the no. of rounds and time per round in the lobby. At the end, the player with the most points wins!
+              </p>
+
+              <button 
+                onClick={() => setShowHowToPlay(false)} 
+                className="w-64 mx-auto block bg-[#3052ad] text-white py-3 rounded-xl shadow-[0_4px_0_rgb(20,40,90)] hover:translate-y-1 hover:shadow-none transition-all text-xl uppercase tracking-wider"
+              >
+                Got it? Let's Go! 
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MAIN LOGIN BOX */}
+        <div className="bg-white/40  p-10 rounded-2xl shadow-2xl w-96 text-center border-b-8 border-black/20">
           <h1 
             className="animate-tick-tock text-5xl text-[#3052ad] mb-8 font-black tracking-wide" 
             style={{ fontFamily: "'Fredoka One', 'Comic Sans MS', cursive" }}
           >
-            SWYTCH.SH
+            swytch.sh
           </h1>      
+          
           <div className="bg-[#28448f] rounded-xl p-4 mb-6 relative select-none">
-            <button onClick={randomAvatar} className="absolute top-2 right-2 bg-white/20 hover:bg-white/40 p-2 rounded-lg transition-colors z-10">
-               🔄
+            <button 
+              onClick={randomAvatar} 
+              className="absolute top-2 right-2 text-white/50 hover:text-white transition-colors z-10 text-xl"
+            >
+              🔄
             </button>
 
             <div className="flex items-center justify-between">
@@ -171,8 +237,9 @@ function App() {
                 <button onClick={nextAvatar} className="text-white text-4xl font-black hover:scale-110 transition-transform">❯</button>
             </div>
 
+            {/* AVATAR GRID */}
             {showAvatarGrid && (
-                <div className="absolute top-full left-0 w-full bg-white border-4 border-[#28448f] rounded-xl mt-2 p-2 grid grid-cols-5 gap-2 h-64 overflow-y-auto z-50 shadow-2xl">
+                <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-md border-4 border-[#28448f] rounded-xl mt-2 p-2 grid grid-cols-5 gap-2 h-64 overflow-y-auto z-50 shadow-2xl">
                     {AVATARS.map((av, idx) => (
                         <img 
                             key={idx} 
@@ -187,7 +254,7 @@ function App() {
           </div>
           
           <input 
-            className="w-full border-4 border-gray-200 p-3 rounded-lg mb-4 font-bold outline-none focus:border-blue-400"
+            className="w-full bg-white/60 p-3 rounded-lg mb-4 font-bold focus:border-blue-400"
             placeholder="YOUR NAME"
             maxLength={12}
             value={username}
@@ -197,7 +264,7 @@ function App() {
             <button onClick={handleCreateRoom} className="bg-[#43b330] hover:bg-[#3da32b] text-white font-black py-3 rounded-lg shadow-[0_5px_0_rgb(34,92,24)] transition-all active:translate-y-1 active:shadow-none">CREATE ROOM</button>
             <div className="flex gap-2">
               <input 
-                className="flex-1 border-4 border-gray-200 p-3 rounded-lg font-bold outline-none uppercase"
+                className="flex-1 bg-white/60 p-3 rounded-lg mb-4 font-bold focus:border-blue-400"
                 placeholder="ROOM ID"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value.toUpperCase())}
