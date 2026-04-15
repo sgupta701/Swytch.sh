@@ -17,7 +17,8 @@ swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike tradi
 
 ---
 
-## 🚀 Key Features
+## Key Features
+
 * **Unique "Relay" Mechanic:** Two players (The Starter and The Finisher) share the drawing duties in 20-second intervals.
 * **Real-Time Interaction:** Powered by Socket.io for instantaneous drawing sync and chat-based guessing.
 * **Fully Responsive:** Play on a laptop with a massive canvas or on your phone with a touch-optimized UI.
@@ -27,7 +28,8 @@ swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike tradi
 
 ---
 
-## 🎮 How to Play
+## How to Play
+
 1.  **Join the Lobby:** Enter your name, pick an avatar, and share your Room ID with friends.
 2.  **The Roles:** 
     * **Drawer 1 (The Foundation):** You see the secret word immediately. You have 20 seconds to start the sketch before the pen is taken away.
@@ -38,7 +40,7 @@ swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike tradi
 5. In the beginning of every round in the game, two new drawers are chosen at random.
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 ### A. Landing Page
 *Read the instructions, enter your name, choose your identity and get in the game either by creating your own lobby or entering into an existing one though room code*
@@ -66,7 +68,7 @@ swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike tradi
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 * **Frontend:** React.js, Tailwind CSS
 * **Backend:** Node.js, Express
 * **Real-time Communication:** Socket.io (WebSockets)
@@ -74,7 +76,7 @@ swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike tradi
 
 ---
 
-## 🛠️ Installation & Local Setup
+## Installation & Local Setup
 
 1. **Clone the repository:**
    ```bash
