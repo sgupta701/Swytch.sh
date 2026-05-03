@@ -1,7 +1,7 @@
 # Swytch.sh 
 A real-time, collaborative multiplayer drawing and guessing game.
 
-swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike traditional games where one person draws the entire word, in swytch, two players collaborate on a single drawing while rest of the players guess. The catch? The pen "swytches" between them every 20 seconds. It’s a test of intuition, teamwork, and their artistic speed.  
+swytch.sh is a unique twist on the classic "Pictionary" style game. Unlike traditional games where one person draws the entire word, in swytch, two players collaborate on a single drawing while rest of the players guess. The catch? The pen "swytches" between them every 20 seconds. It’s a test of intuition, teamwork, and their artistic speed.   
  
 ---
 
